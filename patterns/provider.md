@@ -134,33 +134,31 @@ export default function internationalized (mapMessagesToProps) {
   }
 }
 
-export default class SignInButton extends React.Component {
+// sign-in-button.js
+import React from 'react'
+import PropTypes from 'prop-types'
+
+import internationalized from './internationalized'
+
+export function mapMessagesToProps (messages) {
+  return {
+    signInMessage: messages.signIn
+  }
+}
+
+export class SignInButton extends React.Component {
   static propTypes = {
     onPress: PropTypes.func.isRequired
   }
-  
-  static contextTypes = {
-    language: PropTypes.object.isRequired
-  }
-  
-  componentWillMount () {
-    this.context.language.subscribe(this.setMessages)
-  }
-  
-  componentWillUnmount () {
-    this.context.language.unsubscribe(this.setMessages)
-  }
-  
-  onLanguageChange () {
-    this.forceUpdate()
-  }
-  
+
   render () {
     return (
       <button {...this.props} onClick={ this.props.onPress }>
-        {this.context.language.messages.signIn}
+        {this.props.signInMessage}
       </button>
     )
   }
 }
+
+export default internationalized(mapMessagesToProps)(SignInButton)
 ```
