@@ -52,25 +52,41 @@ export function mapStateToProps (state) {
   }
 }
 
+export class Language extends EventEmitter {
+  constructor (messages) {
+    super()
+    this.messages = messages
+  }
+  
+  subscribe (f) {
+    this.addEventListener('change', f)
+  }
+  
+  unsubscribe (f) {
+    this.removeEventListener('change', f)
+  }
+  
+  changeMessages (messages) {
+    this.messages = messages
+    this.emit('change') 
+  }
+}
+
 export class LanguageProvider extends React.PureComponent {
   static propTypes = {
     messages: PropTypes.object.isRequired
     children: PropTypes.node.isRequired
-  ]
+  }
   
   static childContextTypes = {
-    languageEmitter: PropTypes.object.isRequired
+    language: PropTypes.object.isRequired
   }
   
-  languageEmitter = new EventEmitter()
-  
-  constructor () {
-    this.languageEmitter.defaultValue = this.props.message
-  }
+  language = new Language(this.props.messages)
   
   getChildContext () {
     return {
-      languageEmitter: this.languageEmitter
+      language: this.language
     }
   }
   
@@ -79,9 +95,44 @@ export class LanguageProvider extends React.PureComponent {
   }
 }
 
-//sign-in-button.js
+//internationalized.js
 import React from 'react'
 import PropTypes from 'prop-types'
+
+export default function internationalized (mapMessagesToProps) {
+  return function (Component) {
+    return class extends React.PureComponent {
+      static contextTypes = {
+        language: PropTypes.object.isRequired
+      }
+
+      componentWillMount () {
+        this.context.language.subscribe(this.onLanguageChange)
+      }
+
+      componentWillUnmount () {
+        this.context.language.unsubscribe(this.onLanguageChange)
+      }
+
+      onLanguageChange = () => {
+        this.forceUpdate()
+      }
+
+      render () {
+        const messagesProps = mapMessagesToProps(
+          this.context.language.messages,
+          this.props
+        )
+        
+        const props = Object.assign(messagesProps, this.props)
+          
+        return (
+          <Component {...props} />
+        )
+      }
+    }
+  }
+}
 
 export default class SignInButton extends React.Component {
   static propTypes = {
@@ -89,31 +140,25 @@ export default class SignInButton extends React.Component {
   }
   
   static contextTypes = {
-    languageEmitter: PropTypes.object.isRequired
+    language: PropTypes.object.isRequired
   }
   
-  state = {
-    messages: this.languageEmitter.defaultValue
-  ]
-  
   componentWillMount () {
-    this.context.languageEmitter.addEventListener('change', this.setMessages)
+    this.context.language.subscribe(this.setMessages)
   }
   
   componentWillUnmount () {
-    this.context.languageEmitter.removeEventListener('change', this.setMessages)
-  ]
+    this.context.language.unsubscribe(this.setMessages)
+  }
   
-  setMessages (messages) {
-    this.state({
-      messages
-    })
-  ]
+  onLanguageChange () {
+    this.forceUpdate()
+  }
   
   render () {
     return (
       <button {...this.props} onClick={ this.props.onPress }>
-        {this.state.messages.signIn}
+        {this.context.language.messages.signIn}
       </button>
     )
   }
